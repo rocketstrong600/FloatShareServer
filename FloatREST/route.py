@@ -54,14 +54,16 @@ def updateTune():
     xml = request.args.get('xml')
 
     sUser: User = User.query.filter(User.sessionID==sessionid).first()
+    sTune = Tune.query.filter(Tune.id==tuneID).first()
+    if sTune == None:
+        return jsonRes(json.dumps({**api_info, "Message": "Tune Not Found", "success": 0}))
     if not sUser == None:
         if sUser.CheckSession(sessionid):
-            updatedTune = Tune.query.filter(Tune.id==tuneID).first()
-            updatedTune.name = name
-            updatedTune.description = description
-            updatedTune.XML = xml
+            sTune.name = name
+            sTune.description = description
+            sTune.XML = xml
             db_session.commit()
-            app.logger.info(f"User {sUser.username} updated Tune {name} With ID {updatedTune.id}")
+            app.logger.info(f"User {sUser.username} updated Tune {name} With ID {sTune.id}")
 
             return jsonRes(json.dumps({**api_info, "Message": "Successfully Updated", "success": 1}))
 
