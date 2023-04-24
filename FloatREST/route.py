@@ -1,6 +1,6 @@
 from flask import render_template, url_for, flash, redirect, request, Response
 from . import app, db_session, api_info
-from .models import User, Tune, Message
+from .models import User, Board, Tune, Message
 from .helpers import jsonRes
 import json
 
@@ -8,7 +8,7 @@ import json
 def index():
     return jsonRes(json.dumps(api_info))
 
-@app.route('/login', methods=["GET", "POST"])
+@app.route('/auth/login', methods=["GET", "POST"])
 def login():
     username = request.args.get('username') or ""
     password = request.args.get('password') or ""
@@ -25,7 +25,7 @@ def login():
 
     return jsonRes(json.dumps({**api_info, "Message": "Access Denied", "success": 0}))
 
-@app.route('/posttune', methods=["GET", "POST"])
+@app.route('/post/tune', methods=["GET", "POST"])
 def postTune():
     sessionid = request.args.get('sessionid') or ""
     name = request.args.get('name') or ""
@@ -45,7 +45,28 @@ def postTune():
 
     return jsonRes(json.dumps({**api_info, "Message": "Access Denied", "success": 0}))
 
-@app.route('/updatetune', methods=["GET", "POST"])
+@app.route('/post/board', methods=["GET", "POST"])
+def postBoard():
+    sessionid = request.args.get('sessionid') or ""
+    name = request.args.get('name') or ""
+    description = request.args.get('description') or ""
+    voltage = request.args.get('voltage') or ""
+    motor = request.args.get('motor') or ""
+
+    sUser: User = User.query.filter(User.sessionID==sessionid).first()
+    if not sUser == None:
+        if sUser.CheckSession(sessionid):
+            newBoard = Board(name=name, description=description, voltage=int(voltage), motor=motor, odometer=0, Owner=sUser.id)
+            db_session.add(newBoard)
+            db_session.commit()
+            app.logger.info(f"User {sUser.username} Posted Tune {name} With ID {newBoard.id}")
+
+            return jsonRes(json.dumps({**api_info, "Message": "Successfully Posted", "success": 1}))
+
+
+    return jsonRes(json.dumps({**api_info, "Message": "Access Denied", "success": 0}))
+
+@app.route('/update/tune', methods=["GET", "POST"])
 def updateTune():
     sessionid = request.args.get('sessionid') or ""
     tuneID = request.args.get('id') or ""
@@ -69,7 +90,7 @@ def updateTune():
 
     return jsonRes(json.dumps({**api_info, "Message": "Access Denied", "success": 0}))
 
-@app.route('/gettunes', methods=["GET", "POST"])
+@app.route('/get/tunes', methods=["GET", "POST"])
 def getTunes():
     sessionid = request.args.get('sessionid') or ""
     tuneFilter = request.args.get('filter') or ""
@@ -106,7 +127,7 @@ def getTunes():
 
     return jsonRes(json.dumps({**api_info, "Message": "Access Denied", "success": 0}))
 
-@app.route('/vote', methods=["GET", "POST"])
+@app.route('/post/vote', methods=["GET", "POST"])
 def vote():
     sessionid = request.args.get('sessionid') or ""
     tuneID = request.args.get('id') or ""
@@ -123,7 +144,7 @@ def vote():
 
     return jsonRes(json.dumps({**api_info, "Message": "Access Denied", "success": 0}))
 
-@app.route('/share', methods=["GET", "POST"])
+@app.route('/post/share', methods=["GET", "POST"])
 def share():
     sessionid = request.args.get('sessionid') or ""
     tuneID = request.args.get('id') or ""
@@ -145,7 +166,7 @@ def share():
 
     return jsonRes(json.dumps({**api_info, "Message": "Access Denied", "success": 0}))
 
-@app.route('/message', methods=["GET", "POST"])
+@app.route('/post/message', methods=["GET", "POST"])
 def sendMessage():
     sessionid = request.args.get('sessionid') or ""
     to = request.args.get('to') or ""
@@ -168,7 +189,7 @@ def sendMessage():
     return jsonRes(json.dumps({**api_info, "Message": "Access Denied", "success": 0}))
 
 
-@app.route('/getmessages', methods=["GET", "POST"])
+@app.route('/get/messages', methods=["GET", "POST"])
 def getMessages():
     sessionid = request.args.get('sessionid') or ""
 
@@ -183,7 +204,7 @@ def getMessages():
     
     return jsonRes(json.dumps({**api_info, "Message": "Access Denied", "success": 0}))
 
-@app.route('/newuser', methods=["GET", "POST"])
+@app.route('/auth/post/user', methods=["GET", "POST"])
 def newuser():
     sessionid = request.args.get('sessionid') or ""
     username = request.args.get('username') or ""
@@ -203,7 +224,7 @@ def newuser():
     
     return jsonRes(json.dumps({**api_info, "Message": "Access Denied", "success": 0}))
 
-@app.route('/moduser', methods=["GET", "POST"])
+@app.route('/auth/update/user', methods=["GET", "POST"])
 def moduser():
     sessionid = request.args.get('sessionid') or ""
     username = request.args.get('username') or ""
@@ -221,7 +242,7 @@ def moduser():
     
     return jsonRes(json.dumps({**api_info, "Message": "Access Denied", "success": 0}))
 
-@app.route('/logout', methods=["GET", "POST"])
+@app.route('/auth/logout', methods=["GET", "POST"])
 def logout():
     sessionid = request.args.get('sessionid') or ""
     sUser: User = User.query.filter(User.sessionID==sessionid).first()
