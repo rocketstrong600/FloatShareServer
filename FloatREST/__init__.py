@@ -1,6 +1,6 @@
 from flask import Flask
 from logging.config import dictConfig
-from FloatREST.database import db_session
+from .database import db_session
 import os
 
 api_info = {

@@ -1,7 +1,7 @@
 from flask import render_template, url_for, flash, redirect, request, Response
-from FloatREST import app, db_session, api_info
-from FloatREST.models import User, Tune, Message
-from FloatREST.helpers import jsonRes
+from . import app, db_session, api_info
+from .models import User, Tune, Message
+from .helpers import jsonRes
 import json
 
 @app.route('/')
@@ -10,12 +10,12 @@ def index():
 
 @app.route('/login', methods=["GET", "POST"])
 def login():
-    username = request.args.get('username')
-    password = request.args.get('password')
+    username = request.args.get('username') or ""
+    password = request.args.get('password') or ""
     app.logger.info(f"{username} Attempting Login")
 
     sUser: User = User.query.filter(User.username==username).first()
-    if not sUser  == None:
+    if not sUser == None:
         if sUser.CheckPassword(password):
             sUser.StartSession()
             app.logger.info(f"{sUser.username} Successfull Login new session {sUser.sessionID}")
@@ -27,10 +27,10 @@ def login():
 
 @app.route('/posttune', methods=["GET", "POST"])
 def postTune():
-    sessionid = request.args.get('sessionid')
-    name = request.args.get('name')
-    description = request.args.get('description')
-    xml = request.args.get('xml')
+    sessionid = request.args.get('sessionid') or ""
+    name = request.args.get('name') or ""
+    description = request.args.get('description') or ""
+    xml = request.args.get('xml') or ""
 
     sUser: User = User.query.filter(User.sessionID==sessionid).first()
     if not sUser == None:
@@ -47,11 +47,11 @@ def postTune():
 
 @app.route('/updatetune', methods=["GET", "POST"])
 def updateTune():
-    sessionid = request.args.get('sessionid')
-    tuneID = request.args.get('id')
-    name = request.args.get('name')
-    description = request.args.get('description')
-    xml = request.args.get('xml')
+    sessionid = request.args.get('sessionid') or ""
+    tuneID = request.args.get('id') or ""
+    name = request.args.get('name') or ""
+    description = request.args.get('description') or ""
+    xml = request.args.get('xml') or ""
 
     sUser: User = User.query.filter(User.sessionID==sessionid).first()
     sTune = Tune.query.filter(Tune.id==tuneID).first()
@@ -71,8 +71,8 @@ def updateTune():
 
 @app.route('/gettunes', methods=["GET", "POST"])
 def getTunes():
-    sessionid = request.args.get('sessionid')
-    tuneFilter = request.args.get('filter')
+    sessionid = request.args.get('sessionid') or ""
+    tuneFilter = request.args.get('filter') or ""
 
     sUser: User = User.query.filter(User.sessionID==sessionid).first()
     if not sUser == None:
@@ -87,10 +87,10 @@ def getTunes():
                 case "owned":
                     foundTunes = Tune.query.filter(Tune.Owner==sUser.id).all()
                 case "id":
-                    tuneID = int(request.args.get('tune'))
+                    tuneID = int(request.args.get('tune') or "")
                     foundTunes = Tune.query.filter(Tune.id==tuneID).all()
                 case "owner":
-                    ownerID = int(request.args.get('owner'))
+                    ownerID = int(request.args.get('owner') or "")
                     oUser: User = User.query.filter(User.id==ownerID).first()
                     if not oUser == None:
                         foundTunes = Tune.query.filter(Tune.Owner==oUser.id).all()
@@ -108,8 +108,8 @@ def getTunes():
 
 @app.route('/vote', methods=["GET", "POST"])
 def vote():
-    sessionid = request.args.get('sessionid')
-    tuneID = request.args.get('id')
+    sessionid = request.args.get('sessionid') or ""
+    tuneID = request.args.get('id') or ""
 
     sUser: User = User.query.filter(User.sessionID==sessionid).first()
     sTune = Tune.query.filter(Tune.id==tuneID).first()
@@ -125,9 +125,9 @@ def vote():
 
 @app.route('/share', methods=["GET", "POST"])
 def share():
-    sessionid = request.args.get('sessionid')
-    tuneID = request.args.get('id')
-    to = request.args.get('to')
+    sessionid = request.args.get('sessionid') or ""
+    tuneID = request.args.get('id') or ""
+    to = request.args.get('to') or ""
 
     sUser: User = User.query.filter(User.sessionID==sessionid).first()
     tUser: User = User.query.filter(User.username==to).first()
@@ -147,11 +147,11 @@ def share():
 
 @app.route('/message', methods=["GET", "POST"])
 def sendMessage():
-    sessionid = request.args.get('sessionid')
-    to = request.args.get('to')
-    frm = request.args.get('FROM')
-    msg = request.args.get('MSG')
-    subject = request.args.get('SUB')
+    sessionid = request.args.get('sessionid') or ""
+    to = request.args.get('to') or ""
+    frm = request.args.get('FROM') or ""
+    msg = request.args.get('MSG') or ""
+    subject = request.args.get('SUB') or ""
 
     sUser: User = User.query.filter(User.sessionID==sessionid).first()
     tUser: User = User.query.filter(User.username==to).first()
@@ -170,7 +170,7 @@ def sendMessage():
 
 @app.route('/getmessages', methods=["GET", "POST"])
 def getMessages():
-    sessionid = request.args.get('sessionid')
+    sessionid = request.args.get('sessionid') or ""
 
     sUser: User = User.query.filter(User.sessionID==sessionid).first()
     if not sUser == None:
@@ -185,10 +185,10 @@ def getMessages():
 
 @app.route('/newuser', methods=["GET", "POST"])
 def newuser():
-    sessionid = request.args.get('sessionid')
-    username = request.args.get('username')
-    password = request.args.get('password')
-    level = request.args.get('level')
+    sessionid = request.args.get('sessionid') or ""
+    username = request.args.get('username') or ""
+    password = request.args.get('password') or ""
+    level = request.args.get('level') or ""
     aUser: User = User.query.filter(User.username==username).first()
     sUser: User = User.query.filter(User.sessionID==sessionid).first()
     if aUser  == None and not sUser == None and not username == None or password == None:
@@ -205,10 +205,10 @@ def newuser():
 
 @app.route('/moduser', methods=["GET", "POST"])
 def moduser():
-    sessionid = request.args.get('sessionid')
-    username = request.args.get('username')
-    password = request.args.get('password')
-    level = request.args.get('level')
+    sessionid = request.args.get('sessionid') or ""
+    username = request.args.get('username') or ""
+    password = request.args.get('password') or ""
+    level = request.args.get('level') or ""
 
     eUser: User = User.query.filter(User.username==username).first()
     sUser: User = User.query.filter(User.sessionID==sessionid).first()
@@ -223,7 +223,7 @@ def moduser():
 
 @app.route('/logout', methods=["GET", "POST"])
 def logout():
-    sessionid = request.args.get('sessionid')
+    sessionid = request.args.get('sessionid') or ""
     sUser: User = User.query.filter(User.sessionID==sessionid).first()
     if not sUser == None:
         if sUser.CheckSession(sessionid):

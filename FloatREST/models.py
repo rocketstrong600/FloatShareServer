@@ -1,4 +1,4 @@
-from FloatREST.database import Base
+from .database import Base
 
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Table
 from sqlalchemy.orm import relationship
@@ -8,15 +8,22 @@ import uuid
 from time import time
 import math
 
-vote_assosiation_table = Table(
-    "vote_assosiations",
+board_association_table = Table(
+    "board_associations",
+    Base.metadata,
+    Column("tune_id", ForeignKey("tunes.tune_id"), primary_key=True),
+    Column("board_id", ForeignKey("boards.board_id"), primary_key=True),
+)
+
+vote_association_table = Table(
+    "vote_associations",
     Base.metadata,
     Column("user_id", ForeignKey("tunes.tune_id"), primary_key=True),
     Column("tune_id", ForeignKey("users.user_id"), primary_key=True),
 )
 
-shared_assosiation_table = Table(
-    "shared_assosiations",
+shared_association_table = Table(
+    "shared_associations",
     Base.metadata,
     Column("user_id", ForeignKey("tunes.tune_id"), primary_key=True),
     Column("tune_id", ForeignKey("users.user_id"), primary_key=True),
@@ -32,11 +39,12 @@ class User(Base):
     sessionID = Column(String(256), nullable=True)
     lifetime = Column(Integer)
 
-    shared = relationship('Tune', secondary=shared_assosiation_table, back_populates="shared_with")
+    shared = relationship('Tune', secondary=shared_association_table, back_populates="shared_with")
 
     messages = relationship('Message')
-    voted = relationship('Tune', secondary=vote_assosiation_table, back_populates="voters")
+    voted = relationship('Tune', secondary=vote_association_table, back_populates="voters")
     tunes = relationship('Tune')
+    boards = relationship('Board')
 
     def StartSession(self):
         self.sessionID = str(uuid.uuid1())
@@ -64,6 +72,17 @@ class User(Base):
     def CheckSession(self, session: str):
         return session == self.sessionID and (time()-self.lifetime) < 3600
 
+class Board(Base):
+    __tablename__ = 'boards'
+    id = Column("board_id", Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(300), nullable=False)
+    odometer = Column(Integer, nullable=False)
+    voltage = Column(Integer, nullable=False)
+    motor = Column(String(100), nullable=True)
+    Owner = Column(Integer, ForeignKey('users.user_id'), nullable=False)
+
+    tunes = relationship('Tune', secondary=board_association_table, back_populates="boards")
 
 class Tune(Base):
     __tablename__ = 'tunes'
@@ -74,11 +93,11 @@ class Tune(Base):
     Public = Column(Boolean, default=False, nullable=False)
     Owner = Column(Integer, ForeignKey('users.user_id'), nullable=False)
 
+    voters = relationship('User', secondary=vote_association_table, back_populates="voted")
+    shared_with = relationship('User', secondary=shared_association_table, back_populates="shared")
 
-
-    voters = relationship('User', secondary=vote_assosiation_table, back_populates="voted")
-    shared_with = relationship('User', secondary=shared_assosiation_table, back_populates="shared")
-
+    boards = relationship('Board', secondary=board_association_table, back_populates="tunes")
+    
     def votes(self):
         return len(self.voters)
 
